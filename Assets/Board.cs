@@ -29,7 +29,10 @@ public class Board : MonoBehaviour
             RaycastHit2D hit = Physics2D.Raycast(ray.origin, ray.direction);
             if (hit.transform != null)
             {
-                Debug.Log(hit.transform.name);
+                string[] str = hit.transform.name.Split(',');
+                int r, c;
+                int.TryParse(str[0], out c);
+                int.TryParse(str[1], out r);
             }
         }
     }
@@ -46,10 +49,10 @@ public class Board : MonoBehaviour
             }
         }
 
-        SetPiece(3, 4, 1);
-        SetPiece(4, 3, 1);
-        SetPiece(3, 3, 2);
-        SetPiece(4, 4, 2);
+        SetPiece(3, 4, 2);
+        SetPiece(4, 3, 2);
+        SetPiece(3, 3, 1);
+        SetPiece(4, 4, 1);
     }
 
     void SetPiece(int row, int col, int id)
