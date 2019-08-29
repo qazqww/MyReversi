@@ -12,24 +12,42 @@ public class Board : MonoBehaviour
 
     GameObject slot;
     GameObject piece;
+    GameObject temp;
     Sprite black;
     Sprite white;
+
+    bool isChanged = false;
 
     void Awake()
     {
         slot = Resources.Load<GameObject>("slot");
         piece = Resources.Load<GameObject>("piece");
+        temp = Resources.Load<GameObject>("gray");
         black = Resources.Load<Sprite>("black");
         white = Resources.Load<Sprite>("white");
         BoardSetting();
+        temp = Instantiate(temp, new Vector3(-10, -10, 0), Quaternion.identity);
     }
 
     void Update()
     {
-        if (Input.GetMouseButtonDown(0))
-            SetPieceWithClick(1);
-        else if (Input.GetMouseButtonDown(1))
-            SetPieceWithClick(2);
+        Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        if (pos.x < -4 || pos.x > 4 || pos.y < -3 || pos.y > 5)
+        {
+            temp.transform.position = new Vector3(-10, -10, 0);
+        }
+        else
+        {
+            pos.x = Mathf.Floor(pos.x) + 0.5f;
+            pos.y = Mathf.Floor(pos.y) + 0.5f;
+            pos.z = temp.transform.position.z;
+            temp.transform.position = pos;
+
+            if (Input.GetMouseButtonDown(0))
+                SetPieceWithClick(1);
+            else if (Input.GetMouseButtonDown(1))
+                SetPieceWithClick(2);
+        }
     }
 
     void BoardSetting()
@@ -77,9 +95,11 @@ public class Board : MonoBehaviour
 
             if (boardInfo[r, c] == 0)
             {
-                SetPiece(r, c, id);
-                boardInfo[r, c] = id;
-                CheckToChange(r, c, id);
+                if (CheckToChange(r, c, id))
+                {
+                    SetPiece(r, c, id);
+                    boardInfo[r, c] = id;
+                }
             }
             else // 이미 돌이 놓여진 위치일 경우
             {
@@ -119,8 +139,12 @@ public class Board : MonoBehaviour
         // 내 돌일 경우
         else if (nextPiece == id)
         {
-            for (int i = 0; i < changeList.Count; i++)
-                ChangePiece(changeList[i]/10, changeList[i]%10, id);
+            if (changeList.Count > 0)
+            {
+                for (int i = 0; i < changeList.Count; i++)
+                    ChangePiece(changeList[i] / 10, changeList[i] % 10, id);
+                isChanged = true;
+            }
             return;
         }
         // 상대방 돌일 경우
@@ -134,8 +158,9 @@ public class Board : MonoBehaviour
     }
 
     // ChangePieces를 전 방향으로 호출
-    void CheckToChange(int row, int col, int id)
+    bool CheckToChange(int row, int col, int id)
     {
+        bool changed = false;
         ChangePieces(row, col, -1, -1, id);
         ChangePieces(row, col, -1, 0, id);        
         ChangePieces(row, col, -1, 1, id);
@@ -144,5 +169,9 @@ public class Board : MonoBehaviour
         ChangePieces(row, col, 1, -1, id);
         ChangePieces(row, col, 1, 0, id);
         ChangePieces(row, col, 1, 1, id);
+
+        changed = isChanged;
+        isChanged = false;
+        return changed;
     }
 }
