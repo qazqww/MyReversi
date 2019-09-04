@@ -17,6 +17,7 @@ public class Board : MonoBehaviour
     Sprite white;
 
     bool isChanged = false;
+    bool turn = true; // true : 검정 턴, false : 하양 턴
 
     void Awake()
     {
@@ -31,8 +32,9 @@ public class Board : MonoBehaviour
 
     void Update()
     {
+        // 현재 마우스 위치에 돌 미리 표시
         Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        if (pos.x < -4 || pos.x > 4 || pos.y < -3 || pos.y > 5)
+        if (pos.x < -4 || pos.x > 4 || pos.y < -3 || pos.y > 5) // 돌판범위 밖일 경우
         {
             temp.transform.position = new Vector3(-10, -10, 0);
         }
@@ -43,13 +45,14 @@ public class Board : MonoBehaviour
             pos.z = temp.transform.position.z;
             temp.transform.position = pos;
 
-            if (Input.GetMouseButtonDown(0))
+            if (Input.GetMouseButtonDown(0) && turn)
                 SetPieceWithClick(1);
-            else if (Input.GetMouseButtonDown(1))
+            else if (Input.GetMouseButtonDown(1) && !turn)
                 SetPieceWithClick(2);
         }
     }
 
+    // 돌판 초기 세팅
     void BoardSetting()
     {
         for (int i = 0; i < 8; i++)
@@ -69,7 +72,7 @@ public class Board : MonoBehaviour
     }
 
     // 돌을 놓는다
-    void SetPiece(int row, int col, int id)
+    public void SetPiece(int row, int col, int id)
     {
         Sprite sprite = black;
         if (id == 2) sprite = white;
@@ -81,7 +84,7 @@ public class Board : MonoBehaviour
     }
 
     // 마우스 클릭으로 새 돌을 놓는다
-    void SetPieceWithClick(int id)
+    public void SetPieceWithClick(int id)
     {
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         RaycastHit2D hit = Physics2D.Raycast(ray.origin, ray.direction);
@@ -99,6 +102,7 @@ public class Board : MonoBehaviour
                 {
                     SetPiece(r, c, id);
                     boardInfo[r, c] = id;
+                    turn = !turn;
                 }
             }
             else // 이미 돌이 놓여진 위치일 경우
@@ -158,7 +162,7 @@ public class Board : MonoBehaviour
     }
 
     // ChangePieces를 전 방향으로 호출
-    bool CheckToChange(int row, int col, int id)
+    public bool CheckToChange(int row, int col, int id)
     {
         bool changed = false;
         ChangePieces(row, col, -1, -1, id);

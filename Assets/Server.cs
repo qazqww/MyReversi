@@ -9,9 +9,9 @@ public class Server : MonoBehaviour
 {
     Socket server;
     //Socket client; // 클라이언트 소켓 복사본
-    List<Socket> clients = new List<Socket>();
+    List<Socket> clientList = new List<Socket>();
 
-    int uniqueCount = 1;
+    //int uniqueCount = 1;
 
     void Start()
     {
@@ -28,33 +28,33 @@ public class Server : MonoBehaviour
             //string sendStr = string.Format("{0},{1}", 1000, uniqueCount); // ex) sendStr = "1000(protocol),1"
             //byte[] sendData = System.Text.Encoding.UTF8.GetBytes(sendStr);
             //client.Send(sendData);
-            clients.Add(client);
+            clientList.Add(client);
         }
 
-        for (int i = 0; i < clients.Count; i++)
+        for (int i = 0; i < clientList.Count; i++)
         {
-            if (clients[i].Poll(0, SelectMode.SelectRead))
+            if (clientList[i].Poll(0, SelectMode.SelectRead))
             {
                 byte[] buffer = new byte[1024];
 
                 try
                 {
-                    int recvLength = clients[i].Receive(buffer); // 사이즈 값을 int 타입으로 리턴
+                    int recvLength = clientList[i].Receive(buffer); // 사이즈 값을 int 타입으로 리턴
                     if (recvLength == 0) // 클라이언트가 종료된 경우
                     {
-                        clients[i] = null;
-                        clients.Remove(clients[i]);
+                        clientList[i] = null;
+                        clientList.Remove(clientList[i]);
                         continue;
                     }
                     else
                     {
-                        for (int j = 0; j < clients.Count; j++)
-                            clients[j].Send(buffer);
+                        for (int j = 0; j < clientList.Count; j++)
+                            clientList[j].Send(buffer); // 받은 buffer를 전체 client에 보내겠다
                     }
                 }
                 catch (Exception ex)
                 {
-                    clients[i] = null;
+                    clientList[i] = null;
                     Debug.Log(ex);
                 }
             }
@@ -77,14 +77,14 @@ public class Server : MonoBehaviour
 
     private void OnApplicationQuit()
     {
-        for (int i = 0; i < clients.Count; i++)
+        for (int i = 0; i < clientList.Count; i++)
         {
-            if (clients[i] != null)
+            if (clientList[i] != null)
             {
-                clients[i].Shutdown(SocketShutdown.Both);
-                clients[i].Close();
-                clients.Remove(clients[i]);
-                clients[i] = null;
+                clientList[i].Shutdown(SocketShutdown.Both);
+                clientList[i].Close();
+                clientList.Remove(clientList[i]);
+                clientList[i] = null;
             }
         }
         if (server != null)
