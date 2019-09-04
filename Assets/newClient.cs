@@ -9,6 +9,8 @@ using UnityEngine.UI;
 
 public class newClient : MonoBehaviour
 {
+    Board board;
+
     Socket client;
 
     int portNum = 80;
@@ -17,33 +19,47 @@ public class newClient : MonoBehaviour
 
     void Start()
     {
-        
+        board = GetComponent<Board>();
     }
 
     void Update()
     {
-        if(Input.GetMouseButtonDown(1))
-        {
-            try
-            {
-                byte[] buffer = new byte[1024];
-                buffer = Encoding.UTF8.GetBytes("abc");
-                client.Send(buffer);
-            }
-            catch (Exception ex)
-            {
-                Debug.Log(ex);
-            }
-        }
-
         if(client != null && client.Poll(0, SelectMode.SelectRead))
         {
             byte[] buffer = new byte[1024];
             if (client.Receive(buffer) > 0)
             {
-                chat += Encoding.UTF8.GetString(buffer) + "\n";
+                string str = Encoding.UTF8.GetString(buffer);
+                string[] strs = str.Split(',');
+                int protocolVal = 0;
+                int.TryParse(strs[0], out protocolVal);
+
+                switch(protocolVal)
+                {
+                    case 1000:
+                        int r, c, id;
+                        int.TryParse(strs[1], out r);
+                        int.TryParse(strs[2], out c);
+                        int.TryParse(strs[3], out id);
+                        board.SetPiece(r, c, id);                        
+                        break;
+                    case 1005:
+                        chat += strs[1] + "\n";
+                        break;
+                    default:
+                        break;
+                }
             }
         }
+    }
+
+    // protocol : 1000
+    public void SetPiece(int r, int c, int id)
+    {
+        byte[] buffer = new byte[1024];
+        string str = string.Format("1000,{0},{1},{2}", r, c, id);
+        buffer = Encoding.UTF8.GetBytes(str);
+        client.Send(buffer);
     }
 
     private void OnGUI()
@@ -59,6 +75,7 @@ public class newClient : MonoBehaviour
         if(GUI.Button(new Rect(210, 520, 90, 100), "Send"))
         {
             byte[] buffer = new byte[1024];
+            sendMsg = "1005," + sendMsg;
             buffer = Encoding.UTF8.GetBytes(sendMsg);
             client.Send(buffer);
             sendMsg = string.Empty;

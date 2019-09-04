@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class Board : MonoBehaviour
 {
+    newClient client;
+
     // 0 : 빈칸, 1 : 빨강, 2 : 파랑
     int[,] boardInfo = new int[8, 8];
     SpriteRenderer[,] pieces = new SpriteRenderer[8, 8];
@@ -18,9 +20,17 @@ public class Board : MonoBehaviour
 
     bool isChanged = false;
     bool turn = true; // true : 검정 턴, false : 하양 턴
+    string state = string.Empty;
+
+    public void ChangeTurn()
+    {
+        turn = !turn;
+    }
 
     void Awake()
     {
+        client = GetComponent<newClient>();
+
         slot = Resources.Load<GameObject>("slot");
         piece = Resources.Load<GameObject>("piece");
         temp = Resources.Load<GameObject>("gray");
@@ -47,9 +57,19 @@ public class Board : MonoBehaviour
 
             if (Input.GetMouseButtonDown(0) && turn)
                 SetPieceWithClick(1);
-            else if (Input.GetMouseButtonDown(1) && !turn)
+            else if (Input.GetMouseButtonDown(0) && !turn)
                 SetPieceWithClick(2);
         }
+    }
+
+    private void OnGUI()
+    {
+        if (turn)
+            state = "검은 돌의 턴입니다.";
+        else
+            state = "하얀 돌의 턴입니다.";
+
+        GUI.TextArea(new Rect(400, 0, 200, 100), state);
     }
 
     // 돌판 초기 세팅
@@ -100,14 +120,14 @@ public class Board : MonoBehaviour
             {
                 if (CheckToChange(r, c, id))
                 {
-                    SetPiece(r, c, id);
+                    client.SetPiece(r, c, id);
+                    //SetPiece(r, c, id);
                     boardInfo[r, c] = id;
                     turn = !turn;
                 }
             }
             else // 이미 돌이 놓여진 위치일 경우
             {
-                // ChangePiece(r, c, id);
                 return;
             }
         }
