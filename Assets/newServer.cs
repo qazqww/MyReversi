@@ -61,7 +61,7 @@ public class newServer : MonoBehaviour
         try
         {
             server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            server.Bind(new IPEndPoint(IPAddress.Any, 80));
+            server.Bind(new IPEndPoint(IPAddress.Any, portNum));
             server.Listen(1);
         }
         catch(Exception ex)

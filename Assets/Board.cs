@@ -19,12 +19,12 @@ public class Board : MonoBehaviour
     Sprite white;
 
     bool isChanged = false;
-    bool turn = true; // true : 검정 턴, false : 하양 턴
-    string state = string.Empty;
 
-    public void ChangeTurn()
+    string state = string.Empty;
+    bool turn = true; // true : 검정 턴, false : 하양 턴
+    public void SetTurn(bool turn)
     {
-        turn = !turn;
+        this.turn = turn;
     }
 
     void Awake()
@@ -123,7 +123,6 @@ public class Board : MonoBehaviour
                     client.SetPiece(r, c, id);
                     //SetPiece(r, c, id);
                     boardInfo[r, c] = id;
-                    turn = !turn;
                 }
             }
             else // 이미 돌이 놓여진 위치일 경우
@@ -134,7 +133,7 @@ public class Board : MonoBehaviour
     }
 
     // 해당 위치의 돌 색을 변경
-    void ChangePiece(int row, int col, int id)
+    public void ChangePiece(int row, int col, int id)
     {
         Sprite sprite = black;
         if (id == 2) sprite = white;
@@ -166,7 +165,10 @@ public class Board : MonoBehaviour
             if (changeList.Count > 0)
             {
                 for (int i = 0; i < changeList.Count; i++)
-                    ChangePiece(changeList[i] / 10, changeList[i] % 10, id);
+                {
+                    //ChangePiece(changeList[i] / 10, changeList[i] % 10, id);
+                    client.ChangePiece(changeList[i] / 10, changeList[i] % 10, id);
+                }
                 isChanged = true;
             }
             return;

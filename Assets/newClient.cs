@@ -33,16 +33,30 @@ public class newClient : MonoBehaviour
                 string[] strs = str.Split(',');
                 int protocolVal = 0;
                 int.TryParse(strs[0], out protocolVal);
+                chat += str + "\n";
 
-                switch(protocolVal)
+                switch (protocolVal)
                 {
                     case 1000:
-                        int r, c, id;
-                        int.TryParse(strs[1], out r);
-                        int.TryParse(strs[2], out c);
-                        int.TryParse(strs[3], out id);
-                        board.SetPiece(r, c, id);                        
-                        break;
+                        {
+                            int r, c, id;                            
+                            int.TryParse(strs[1], out r);
+                            int.TryParse(strs[2], out c);
+                            int.TryParse(strs[3], out id);
+                            board.SetPiece(r, c, id);
+                            bool turn = (id==1) ? false : true;
+                            board.SetTurn(turn);
+                            break;
+                        }
+                    case 1001:
+                        {
+                            int r, c, id;
+                            int.TryParse(strs[1], out r);
+                            int.TryParse(strs[2], out c);
+                            int.TryParse(strs[3], out id);
+                            board.ChangePiece(r, c, id);
+                            break;
+                        }
                     case 1005:
                         chat += strs[1] + "\n";
                         break;
@@ -58,6 +72,14 @@ public class newClient : MonoBehaviour
     {
         byte[] buffer = new byte[1024];
         string str = string.Format("1000,{0},{1},{2}", r, c, id);
+        buffer = Encoding.UTF8.GetBytes(str);
+        client.Send(buffer);
+    }
+
+    public void ChangePiece(int r, int c, int id)
+    {
+        byte[] buffer = new byte[1024];
+        string str = string.Format("1001,{0},{1},{2}", r, c, id);
         buffer = Encoding.UTF8.GetBytes(str);
         client.Send(buffer);
     }
