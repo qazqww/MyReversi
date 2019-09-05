@@ -29,39 +29,46 @@ public class newClient : MonoBehaviour
             byte[] buffer = new byte[1024];
             if (client.Receive(buffer) > 0)
             {
-                string str = Encoding.UTF8.GetString(buffer);
-                string[] strs = str.Split(',');
-                int protocolVal = 0;
-                int.TryParse(strs[0], out protocolVal);
-                chat += str + "\n";
-
-                switch (protocolVal)
+                string command = Encoding.UTF8.GetString(buffer);
+                string[] str = command.Split('/');
+                for (int i = 0; i < str.Length; i++)
                 {
-                    case 1000:
-                        {
-                            int r, c, id;                            
-                            int.TryParse(strs[1], out r);
-                            int.TryParse(strs[2], out c);
-                            int.TryParse(strs[3], out id);
-                            board.SetPiece(r, c, id);
-                            bool turn = (id==1) ? false : true;
-                            board.SetTurn(turn);
+                    if (string.IsNullOrWhiteSpace(str[i]))
+                        return;
+
+                    string[] strs = str[i].Split(',');
+                    int protocolVal = 0;
+                    int.TryParse(strs[0], out protocolVal);
+                    chat += str[i] + "\n";
+
+                    switch (protocolVal)
+                    {
+                        case 1000:
+                            {
+                                int r, c, id;
+                                int.TryParse(strs[1], out r);
+                                int.TryParse(strs[2], out c);
+                                int.TryParse(strs[3], out id);
+                                board.SetPiece(r, c, id);
+                                bool turn = (id == 1) ? false : true;
+                                board.SetTurn(turn);
+                                break;
+                            }
+                        case 1001:
+                            {
+                                int r, c, id;
+                                int.TryParse(strs[1], out r);
+                                int.TryParse(strs[2], out c);
+                                int.TryParse(strs[3], out id);
+                                board.ChangePiece(r, c, id);
+                                break;
+                            }
+                        case 1005:
+                            chat += strs[1] + "\n";
                             break;
-                        }
-                    case 1001:
-                        {
-                            int r, c, id;
-                            int.TryParse(strs[1], out r);
-                            int.TryParse(strs[2], out c);
-                            int.TryParse(strs[3], out id);
-                            board.ChangePiece(r, c, id);
+                        default:
                             break;
-                        }
-                    case 1005:
-                        chat += strs[1] + "\n";
-                        break;
-                    default:
-                        break;
+                    }
                 }
             }
         }
@@ -71,7 +78,7 @@ public class newClient : MonoBehaviour
     public void SetPiece(int r, int c, int id)
     {
         byte[] buffer = new byte[1024];
-        string str = string.Format("1000,{0},{1},{2}", r, c, id);
+        string str = string.Format("1000,{0},{1},{2}/", r, c, id);
         buffer = Encoding.UTF8.GetBytes(str);
         client.Send(buffer);
     }
@@ -79,7 +86,7 @@ public class newClient : MonoBehaviour
     public void ChangePiece(int r, int c, int id)
     {
         byte[] buffer = new byte[1024];
-        string str = string.Format("1001,{0},{1},{2}", r, c, id);
+        string str = string.Format("1001,{0},{1},{2}/", r, c, id);
         buffer = Encoding.UTF8.GetBytes(str);
         client.Send(buffer);
     }
