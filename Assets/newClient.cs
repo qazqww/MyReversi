@@ -14,6 +14,12 @@ public class newClient : MonoBehaviour
     Socket client;
 
     int portNum = 80;
+    int uniqueID = -1;
+    public int GetUniqueID()
+    {
+        return uniqueID;
+    }
+
     string chat = string.Empty;
     string sendMsg = string.Empty;    
 
@@ -39,11 +45,11 @@ public class newClient : MonoBehaviour
                     string[] strs = str[i].Split(',');
                     int protocolVal = 0;
                     int.TryParse(strs[0], out protocolVal);
-                    chat += str[i] + "\n";
+                    chat += str[i] + " " + str[i].Length + "\n";
 
                     switch (protocolVal)
                     {
-                        case 1000:
+                        case 1000: // 돌 놓기
                             {
                                 int r, c, id;
                                 int.TryParse(strs[1], out r);
@@ -54,7 +60,7 @@ public class newClient : MonoBehaviour
                                 board.SetTurn(turn);
                                 break;
                             }
-                        case 1001:
+                        case 1001: // 돌 바꾸기
                             {
                                 int r, c, id;
                                 int.TryParse(strs[1], out r);
@@ -63,10 +69,24 @@ public class newClient : MonoBehaviour
                                 board.ChangePiece(r, c, id);
                                 break;
                             }
-                        case 1005:
+                        case 1002: // 실시간 점수 계산
+                            {
+                                int b, w;
+                                int.TryParse(strs[1], out b);
+                                int.TryParse(strs[2], out w);
+                                board.SetScore(b, w);
+                                break;
+                            }
+                        case 1005: // 채팅
                             chat += strs[1] + "\n";
                             break;
+                        case 1010: // 연결 번호 부여
+                            int uniq;
+                            int.TryParse(strs[1], out uniq);
+                            uniqueID = uniq;
+                            break;
                         default:
+                            board.CheckScore();
                             break;
                     }
                 }
@@ -83,10 +103,20 @@ public class newClient : MonoBehaviour
         client.Send(buffer);
     }
 
+    // protocol : 1001
     public void ChangePiece(int r, int c, int id)
     {
         byte[] buffer = new byte[1024];
         string str = string.Format("1001,{0},{1},{2}/", r, c, id);
+        buffer = Encoding.UTF8.GetBytes(str);
+        client.Send(buffer);
+    }
+
+    // protocol : 1002
+    public void CheckScore(int b, int w)
+    {
+        byte[] buffer = new byte[1024];
+        string str = string.Format("1002,{0},{1}", b, w);
         buffer = Encoding.UTF8.GetBytes(str);
         client.Send(buffer);
     }

@@ -6,7 +6,7 @@ public class Board : MonoBehaviour
 {
     newClient client;
 
-    // 0 : 빈칸, 1 : 빨강, 2 : 파랑
+    // 0 : 빈칸, 1 : 검정, 2 : 하양
     int[,] boardInfo = new int[8, 8];
     SpriteRenderer[,] pieces = new SpriteRenderer[8, 8];
 
@@ -19,6 +19,14 @@ public class Board : MonoBehaviour
     Sprite white;
 
     bool isChanged = false;
+
+    int blackScore = 2;    
+    int whiteScore = 2;
+    public void SetScore(int black, int white)
+    {
+        blackScore = black;
+        whiteScore = white;
+    }
 
     string state = string.Empty;
     bool turn = true; // true : 검정 턴, false : 하양 턴
@@ -55,19 +63,29 @@ public class Board : MonoBehaviour
             pos.z = temp.transform.position.z;
             temp.transform.position = pos;
 
-            if (Input.GetMouseButtonDown(0) && turn)
-                SetPieceWithClick(1);
-            else if (Input.GetMouseButtonDown(0) && !turn)
-                SetPieceWithClick(2);
+            if (Input.GetMouseButtonDown(0))
+            {
+                if (client.GetUniqueID() == 0 && turn)
+                    SetPieceWithClick(1);
+                else if (client.GetUniqueID() == 1 && !turn)
+                    SetPieceWithClick(2);
+            }
         }
     }
 
     private void OnGUI()
     {
-        if (turn)
-            state = "검은 돌의 턴입니다.";
+        if (client.GetUniqueID() == -1)
+            state = "Unconnected.";
         else
-            state = "하얀 돌의 턴입니다.";
+        {
+            if (turn)
+                state = "검은 돌의 턴입니다.\n";
+            else
+                state = "하얀 돌의 턴입니다.\n";
+
+            state += string.Format("검은 돌 개수: {0}\n" + "하얀 돌 개수: {1}\n", blackScore, whiteScore);
+        }
 
         GUI.TextArea(new Rect(400, 0, 200, 100), state);
     }
@@ -199,5 +217,25 @@ public class Board : MonoBehaviour
         changed = isChanged;
         isChanged = false;
         return changed;
+    }
+
+    public void CheckScore()
+    {
+        if (client.GetUniqueID() != 1)
+            return;
+
+        blackScore = 0;
+        whiteScore = 0;
+        for (int i = 0; i < 8; i++)
+        {
+            for (int j = 0; j < 8; j++)
+            {
+                if (boardInfo[i, j] == 1)
+                    blackScore++;
+                else if (boardInfo[i, j] == 2)
+                    whiteScore++;
+            }
+        }
+        client.CheckScore(blackScore, whiteScore);
     }
 }

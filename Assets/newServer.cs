@@ -3,7 +3,22 @@ using System.Collections.Generic;
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using UnityEngine;
+
+/* c++ 방식
+public class SendItem
+{
+    public int userID;
+    public int charID;
+    public int protocolID;
+}
+
+public class ReceiveData
+{
+    public int[] itemID;
+    public int[] uniqueID;
+}*/
 
 public class newServer : MonoBehaviour
 {
@@ -11,6 +26,7 @@ public class newServer : MonoBehaviour
     List<Socket> clients = new List<Socket>();
 
     int portNum = 80;
+    int uniqueID = 0;
 
     void Start()
     {
@@ -24,6 +40,10 @@ public class newServer : MonoBehaviour
             Socket client = server.Accept();
             clients.Add(client);
             Debug.Log("A Client is connected.");
+            string str = "1010," + uniqueID;
+            byte[] buffer = Encoding.UTF8.GetBytes(str);
+            client.Send(buffer);
+            uniqueID++;
         }
 
         for(int i=0; i<clients.Count; i++)
