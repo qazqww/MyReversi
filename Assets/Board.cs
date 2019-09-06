@@ -18,6 +18,11 @@ public class Board : MonoBehaviour
     Sprite black;
     Sprite white;
 
+    bool ready = false;
+    public void SetReady(bool ready)
+    {
+        this.ready = ready;
+    }
     bool isChanged = false;
 
     int blackScore = 2;    
@@ -50,6 +55,9 @@ public class Board : MonoBehaviour
 
     void Update()
     {
+        if (!ready)
+            return;
+
         // 현재 마우스 위치에 돌 미리 표시
         Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         if (pos.x < -4 || pos.x > 4 || pos.y < -3 || pos.y > 5) // 돌판범위 밖일 경우
@@ -77,6 +85,8 @@ public class Board : MonoBehaviour
     {
         if (client.GetUniqueID() == -1)
             state = "Unconnected.";
+        else if (!ready)
+            state = "상대를 기다리는 중...";
         else
         {
             if (turn)

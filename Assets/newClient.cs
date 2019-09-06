@@ -45,7 +45,7 @@ public class newClient : MonoBehaviour
                     string[] strs = str[i].Split(',');
                     int protocolVal = 0;
                     int.TryParse(strs[0], out protocolVal);
-                    chat += str[i] + " " + str[i].Length + "\n";
+                    chat += str[i] + "\n";
 
                     switch (protocolVal)
                     {
@@ -84,6 +84,9 @@ public class newClient : MonoBehaviour
                             int uniq;
                             int.TryParse(strs[1], out uniq);
                             uniqueID = uniq;
+                            break;
+                        case 1011: // 게임 시작
+                            board.SetReady(true);
                             break;
                         default:
                             board.CheckScore();

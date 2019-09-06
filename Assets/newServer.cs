@@ -40,10 +40,13 @@ public class newServer : MonoBehaviour
             Socket client = server.Accept();
             clients.Add(client);
             Debug.Log("A Client is connected.");
-            string str = "1010," + uniqueID;
+            string str = "1010," + uniqueID + "/";
             byte[] buffer = Encoding.UTF8.GetBytes(str);
             client.Send(buffer);
             uniqueID++;
+
+            if (clients.Count >= 2)
+                StartGame();
         }
 
         for(int i=0; i<clients.Count; i++)
@@ -87,6 +90,17 @@ public class newServer : MonoBehaviour
         catch(Exception ex)
         {
             Debug.Log(ex);
+        }
+    }
+
+    void StartGame()
+    {
+        for(int i=0; i<clients.Count; i++)
+        {
+            byte[] buffer = new byte[1024];
+            string str = "1011";
+            buffer = Encoding.UTF8.GetBytes(str);
+            clients[i].Send(buffer);
         }
     }
 
