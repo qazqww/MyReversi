@@ -97,8 +97,8 @@ public class newServer : MonoBehaviour
     {
         for(int i=0; i<clients.Count; i++)
         {
-            byte[] buffer = new byte[1024];
             string str = "1011";
+            byte[] buffer = new byte[str.Length];            
             buffer = Encoding.UTF8.GetBytes(str);
             clients[i].Send(buffer);
         }

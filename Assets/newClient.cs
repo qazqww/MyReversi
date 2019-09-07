@@ -15,9 +15,9 @@ public class newClient : MonoBehaviour
 
     int portNum = 80;
     int uniqueID = -1;
-    public int GetUniqueID()
+    public int UniqueID
     {
-        return uniqueID;
+        get { return uniqueID; }
     }
 
     string chat = string.Empty;
@@ -57,7 +57,7 @@ public class newClient : MonoBehaviour
                                 int.TryParse(strs[3], out id);
                                 board.SetPiece(r, c, id);
                                 bool turn = (id == 1) ? false : true;
-                                board.SetTurn(turn);
+                                board.Turn = turn;
                                 break;
                             }
                         case 1001: // 돌 바꾸기
@@ -75,6 +75,7 @@ public class newClient : MonoBehaviour
                                 int.TryParse(strs[1], out b);
                                 int.TryParse(strs[2], out w);
                                 board.SetScore(b, w);
+                                board.CanSetPiece();
                                 break;
                             }
                         case 1005: // 채팅
@@ -87,6 +88,7 @@ public class newClient : MonoBehaviour
                             break;
                         case 1011: // 게임 시작
                             board.SetReady(true);
+                            board.CanSetPiece();
                             break;
                         default:
                             board.CheckScore();
@@ -126,7 +128,7 @@ public class newClient : MonoBehaviour
 
     private void OnGUI()
     {
-        if (GUI.Button(new Rect(0,0,100,100), "Connect"))
+        if (GUI.Button(new Rect(0, 0, 100, 100), "Connect"))
         {
             Connect("127.0.0.1", portNum);
         }

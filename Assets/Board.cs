@@ -6,15 +6,17 @@ public class Board : MonoBehaviour
 {
     newClient client;
 
-    // 0 : 빈칸, 1 : 검정, 2 : 하양
+    // 0 : 빈칸, 1 : 검정, 2 : 하양, 3 : 놓을 수 있는 곳
     int[,] boardInfo = new int[8, 8];
     SpriteRenderer[,] pieces = new SpriteRenderer[8, 8];
+    GameObject[,] tempPlaces = new GameObject[8, 8];
 
     List<int> changeList = new List<int>();
 
     GameObject slot;
     GameObject piece;
-    GameObject temp;
+    GameObject tempPos;
+    GameObject tempPlace;
     Sprite black;
     Sprite white;
 
@@ -24,6 +26,7 @@ public class Board : MonoBehaviour
         this.ready = ready;
     }
     bool isChanged = false;
+    bool justCheck = false;
 
     int blackScore = 2;    
     int whiteScore = 2;
@@ -35,9 +38,10 @@ public class Board : MonoBehaviour
 
     string state = string.Empty;
     bool turn = true; // true : 검정 턴, false : 하양 턴
-    public void SetTurn(bool turn)
+    public bool Turn
     {
-        this.turn = turn;
+        get { return turn; }
+        set { turn = value; }
     }
 
     void Awake()
@@ -46,11 +50,12 @@ public class Board : MonoBehaviour
 
         slot = Resources.Load<GameObject>("slot");
         piece = Resources.Load<GameObject>("piece");
-        temp = Resources.Load<GameObject>("gray");
+        tempPos = Resources.Load<GameObject>("gray");
+        tempPlace = Resources.Load<GameObject>("temp");
         black = Resources.Load<Sprite>("black");
         white = Resources.Load<Sprite>("white");
         BoardSetting();
-        temp = Instantiate(temp, new Vector3(-10, -10, 0), Quaternion.identity);
+        tempPos = Instantiate(tempPos, new Vector3(-10, -10, 0), Quaternion.identity);
     }
 
     void Update()
@@ -62,20 +67,20 @@ public class Board : MonoBehaviour
         Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         if (pos.x < -4 || pos.x > 4 || pos.y < -3 || pos.y > 5) // 돌판범위 밖일 경우
         {
-            temp.transform.position = new Vector3(-10, -10, 0);
+            tempPos.transform.position = new Vector3(-10, -10, 0);
         }
         else
         {
             pos.x = Mathf.Floor(pos.x) + 0.5f;
             pos.y = Mathf.Floor(pos.y) + 0.5f;
-            pos.z = temp.transform.position.z;
-            temp.transform.position = pos;
+            pos.z = tempPos.transform.position.z;
+            tempPos.transform.position = pos;
 
             if (Input.GetMouseButtonDown(0))
             {
-                if (client.GetUniqueID() == 0 && turn)
+                if (client.UniqueID == 0 && turn)
                     SetPieceWithClick(1);
-                else if (client.GetUniqueID() == 1 && !turn)
+                else if (client.UniqueID == 1 && !turn)
                     SetPieceWithClick(2);
             }
         }
@@ -83,7 +88,7 @@ public class Board : MonoBehaviour
 
     private void OnGUI()
     {
-        if (client.GetUniqueID() == -1)
+        if (client.UniqueID == -1)
             state = "Unconnected.";
         else if (!ready)
             state = "상대를 기다리는 중...";
@@ -110,6 +115,12 @@ public class Board : MonoBehaviour
                 GameObject obj = Instantiate(slot, new Vector3(i - 3.5f, j - 2.5f, 0), Quaternion.identity, transform);
                 obj.GetComponent<SpriteRenderer>().sortingOrder = -1;
                 obj.name = string.Format("{0},{1}", i, j);
+
+                tempPlace = Instantiate(tempPlace, new Vector3(i - 3.5f, j - 2.5f, 0), Quaternion.identity, transform);
+                tempPlace.GetComponent<SpriteRenderer>().sortingOrder = 1;
+                tempPlace.name = string.Format("temp:{0},{1}", i, j);
+                tempPlace.SetActive(false);
+                tempPlaces[i, j] = tempPlace;
             }
         }
 
@@ -144,12 +155,11 @@ public class Board : MonoBehaviour
             int.TryParse(str[0], out r);
             int.TryParse(str[1], out c);
 
-            if (boardInfo[r, c] == 0)
+            if (boardInfo[r, c] == 3)
             {
                 if (CheckToChange(r, c, id))
                 {
                     client.SetPiece(r, c, id);
-                    //SetPiece(r, c, id);
                     boardInfo[r, c] = id;
                 }
             }
@@ -182,7 +192,7 @@ public class Board : MonoBehaviour
         int nextPiece = boardInfo[row + toR, col + toC];
 
         // 돌이 없을 경우
-        if (nextPiece == 0)
+        if (nextPiece == 0 || nextPiece == 3)
         {
             changeList.Clear();
             return;
@@ -194,9 +204,10 @@ public class Board : MonoBehaviour
             {
                 for (int i = 0; i < changeList.Count; i++)
                 {
-                    //ChangePiece(changeList[i] / 10, changeList[i] % 10, id);
-                    client.ChangePiece(changeList[i] / 10, changeList[i] % 10, id);
+                    if (!justCheck)
+                        client.ChangePiece(changeList[i] / 10, changeList[i] % 10, id);
                 }
+
                 isChanged = true;
             }
             return;
@@ -214,7 +225,6 @@ public class Board : MonoBehaviour
     // ChangePieces를 전 방향으로 호출
     public bool CheckToChange(int row, int col, int id)
     {
-        bool changed = false;
         ChangePieces(row, col, -1, -1, id);
         ChangePieces(row, col, -1, 0, id);        
         ChangePieces(row, col, -1, 1, id);
@@ -224,14 +234,84 @@ public class Board : MonoBehaviour
         ChangePieces(row, col, 1, 0, id);
         ChangePieces(row, col, 1, 1, id);
 
-        changed = isChanged;
+        bool changed = isChanged;
         isChanged = false;
         return changed;
     }
 
+    public bool CheckToChangeLite(int row, int col, int id)
+    {
+        for (int i=-1; i<=1; i++)
+        {
+            for(int j=-1; j<=1; j++)
+            {
+                if (i == 0 && j == 0)
+                    continue;
+
+                ChangePieces(row, col, i, j, id);
+                if (isChanged)
+                {
+                    isChanged = false;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // 돌을 놓을 수 있는 위치인지 표시
+    void CanSetPiece(int id)
+    {
+        if (id == -1)
+        {
+            for (int r = 0; r < 8; r++) {
+                for (int c = 0; c < 8; c++) {
+                    if (boardInfo[r, c] == 3)
+                    {
+                        tempPlaces[r, c].SetActive(false);
+                        boardInfo[r, c] = 0;
+                    }
+                }
+            }
+            return;
+        }
+
+        justCheck = true;
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+
+                if (boardInfo[r, c] == 3)
+                {
+                    tempPlaces[r,c].SetActive(false);
+                    boardInfo[r, c] = 0;
+                }
+                else if (boardInfo[r, c] != 0)
+                    continue;
+              
+                if (CheckToChangeLite(r, c, id))
+                {
+                    tempPlaces[r, c].SetActive(true);
+                    boardInfo[r, c] = 3;
+                }
+              
+            }
+        }
+        justCheck = false;
+    }
+
+    public void CanSetPiece()
+    {
+        if (client.UniqueID == 0 && turn)
+            CanSetPiece(1);
+        else if (client.UniqueID == 1 && !turn)
+            CanSetPiece(2);
+        else
+            CanSetPiece(-1);
+    }
+
     public void CheckScore()
     {
-        if (client.GetUniqueID() != 1)
+        if (client.UniqueID != 1)
             return;
 
         blackScore = 0;
