@@ -26,7 +26,9 @@ public class Board : MonoBehaviour
         this.ready = ready;
     }
     bool isChanged = false;
+    bool canChange = false;
     bool justCheck = false;
+    bool gameSet = false;
 
     int blackScore = 2;    
     int whiteScore = 2;
@@ -60,7 +62,7 @@ public class Board : MonoBehaviour
 
     void Update()
     {
-        if (!ready)
+        if (!ready || gameSet)
             return;
 
         // 현재 마우스 위치에 돌 미리 표시
@@ -262,6 +264,9 @@ public class Board : MonoBehaviour
     // 돌을 놓을 수 있는 위치인지 표시
     void CanSetPiece(int id)
     {
+        canChange = false;
+
+        // 자기 차례가 아닌 경우 판 정리
         if (id == -1)
         {
             for (int r = 0; r < 8; r++) {
@@ -273,13 +278,14 @@ public class Board : MonoBehaviour
                     }
                 }
             }
+            canChange = true;
             return;
         }
 
         justCheck = true;
+        
         for (int r = 0; r < 8; r++) {
             for (int c = 0; c < 8; c++) {
-
                 if (boardInfo[r, c] == 3)
                 {
                     tempPlaces[r,c].SetActive(false);
@@ -290,10 +296,11 @@ public class Board : MonoBehaviour
               
                 if (CheckToChangeLite(r, c, id))
                 {
+                    if(!canChange)
+                        canChange = true;
                     tempPlaces[r, c].SetActive(true);
                     boardInfo[r, c] = 3;
                 }
-              
             }
         }
         justCheck = false;
@@ -307,6 +314,9 @@ public class Board : MonoBehaviour
             CanSetPiece(2);
         else
             CanSetPiece(-1);
+
+        if (!canChange)
+            client.ChangeTurn();
     }
 
     public void CheckScore()
@@ -327,5 +337,22 @@ public class Board : MonoBehaviour
             }
         }
         client.CheckScore(blackScore, whiteScore);
+
+        if (blackScore == 0 || whiteScore == 0 || blackScore + whiteScore == 64)
+        {
+            client.EndGame();
+        }
+    }
+
+    public void EndGame()
+    {
+        gameSet = true;
+        state = "게임이 종료되었습니다.\n";
+        if (blackScore > whiteScore)
+            state += "검은 돌 승리!";
+        else if (whiteScore > blackScore)
+            state += "하얀 돌 승리!";
+        else
+            state += "동점 무승부!";
     }
 }

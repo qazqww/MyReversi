@@ -9,9 +9,11 @@ using UnityEngine.UI;
 
 public class newClient : MonoBehaviour
 {
-    Board board;
-
     Socket client;
+
+    Board board;
+    public Text debugText;
+    Vector2 scrollPos = Vector2.zero;
 
     int portNum = 80;
     int uniqueID = -1;
@@ -36,6 +38,7 @@ public class newClient : MonoBehaviour
             if (client.Receive(buffer) > 0)
             {
                 string command = Encoding.UTF8.GetString(buffer);
+                chat += command + "\n";
                 string[] str = command.Split('/');
                 for (int i = 0; i < str.Length; i++)
                 {
@@ -45,7 +48,6 @@ public class newClient : MonoBehaviour
                     string[] strs = str[i].Split(',');
                     int protocolVal = 0;
                     int.TryParse(strs[0], out protocolVal);
-                    chat += str[i] + "\n";
 
                     switch (protocolVal)
                     {
@@ -78,6 +80,14 @@ public class newClient : MonoBehaviour
                                 board.CanSetPiece();
                                 break;
                             }
+                        case 1003: // 턴 바꾸기
+                            board.Turn = !board.Turn;
+                            debugText.text = "놓을 위치가 없다!";
+                            break;
+                        case 1004: // 게임 종료
+                            board.EndGame();
+                            debugText.text = "게임 끝!";
+                            break;
                         case 1005: // 채팅
                             chat += strs[1] + "\n";
                             break;
@@ -126,6 +136,24 @@ public class newClient : MonoBehaviour
         client.Send(buffer);
     }
 
+    // protocol : 1003
+    public void ChangeTurn()
+    {
+        byte[] buffer = new byte[1024];
+        string str = "1003";
+        buffer = Encoding.UTF8.GetBytes(str);
+        client.Send(buffer);
+    }
+
+    // protocol : 1004
+    public void EndGame()
+    {
+        byte[] buffer = new byte[1024];
+        string str = "/1004";
+        buffer = Encoding.UTF8.GetBytes(str);
+        client.Send(buffer);
+    }
+
     private void OnGUI()
     {
         if (GUI.Button(new Rect(0, 0, 100, 100), "Connect"))
@@ -133,7 +161,12 @@ public class newClient : MonoBehaviour
             Connect("127.0.0.1", portNum);
         }
 
-        GUI.TextArea(new Rect(0, 200, 300, 300), chat);
+        Vector2 stringSize = GUI.skin.textArea.CalcSize(new GUIContent("안녕"));
+        int height = 300;
+        
+        scrollPos = GUI.BeginScrollView(new Rect(0, 200, 320, height), scrollPos, new Rect(0, 200, 320, 1500));
+        GUI.TextArea(new Rect(0, 200, 300, 1500), chat);
+        GUI.EndScrollView();
         sendMsg = GUI.TextArea(new Rect(0, 520, 190, 100), sendMsg);
 
         if(GUI.Button(new Rect(210, 520, 90, 100), "Send"))
