@@ -94,7 +94,7 @@ public class Board : MonoBehaviour
             state = "Unconnected.";
         else if (!ready)
             state = "상대를 기다리는 중...";
-        else
+        else if (!gameSet)
         {
             if (turn)
                 state = "검은 돌의 턴입니다.\n";
@@ -130,6 +130,14 @@ public class Board : MonoBehaviour
         SetPiece(4, 3, 2);
         SetPiece(3, 3, 1);
         SetPiece(4, 4, 1);
+
+        //SetPiece(3, 4, 1);
+        //SetPiece(3, 5, 2);
+        //SetPiece(3, 6, 1);
+        //SetPiece(5, 4, 1);
+        //SetPiece(5, 5, 2);
+        //SetPiece(5, 6, 1);
+        //SetPiece(7, 7, 2);
     }
 
     // 돌을 놓는다
@@ -315,7 +323,7 @@ public class Board : MonoBehaviour
         else
             CanSetPiece(-1);
 
-        if (!canChange)
+        if (!canChange && !gameSet)
             client.ChangeTurn();
     }
 

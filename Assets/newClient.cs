@@ -82,11 +82,12 @@ public class newClient : MonoBehaviour
                             }
                         case 1003: // 턴 바꾸기
                             board.Turn = !board.Turn;
-                            debugText.text = "놓을 위치가 없다!";
+                            board.CanSetPiece();
+                            debugText.text = "놓을 위치 없음";
                             break;
                         case 1004: // 게임 종료
                             board.EndGame();
-                            debugText.text = "게임 끝!";
+                            debugText.text = "게임 끝";
                             break;
                         case 1005: // 채팅
                             chat += strs[1] + "\n";
@@ -98,6 +99,7 @@ public class newClient : MonoBehaviour
                             break;
                         case 1011: // 게임 시작
                             board.SetReady(true);
+                            board.CheckScore();
                             board.CanSetPiece();
                             break;
                         default:

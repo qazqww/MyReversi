@@ -6,20 +6,6 @@ using System.Net.Sockets;
 using System.Text;
 using UnityEngine;
 
-/* c++ 방식
-public class SendItem
-{
-    public int userID;
-    public int charID;
-    public int protocolID;
-}
-
-public class ReceiveData
-{
-    public int[] itemID;
-    public int[] uniqueID;
-}*/
-
 public class newServer : MonoBehaviour
 {
     Socket server;
