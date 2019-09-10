@@ -7,38 +7,65 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
 
+enum ProtocolValue
+{
+    SetPiece = 1000,
+    ChangePiece,
+    CheckScore,
+    ChangeTurn,
+    GameSet,
+    Chat,
+    SetUniqueID = 1010,
+    StartGame
+}
+
 public class newClient : MonoBehaviour
 {
     Socket client;
 
     Board board;
-    public Text debugText;
     Vector2 scrollPos = Vector2.zero;
 
-    int portNum = 80;
+    int portNum = 80;    
+    int connectTry = 1;
+    float elapsedTime = 0;
     int uniqueID = -1;
     public int UniqueID
     {
         get { return uniqueID; }
     }
 
+    List<string> chatStr = new List<string>();
+    int chatCount = 0;
     string chat = string.Empty;
-    string sendMsg = string.Empty;    
+    string chatMsg = string.Empty;    
 
     void Start()
     {
         board = GetComponent<Board>();
+        Connect("127.0.0.1", portNum);
     }
 
     void Update()
     {
-        if(client != null && client.Poll(0, SelectMode.SelectRead))
+        if (client == null)
+        {
+            elapsedTime += Time.deltaTime;
+            if (elapsedTime > 3f)
+            {
+                connectTry++;
+                Debug.Log(connectTry);
+                elapsedTime = 0;
+                Connect("127.0.0.1", portNum);
+            }
+        }
+
+        else if (client.Poll(0, SelectMode.SelectRead))
         {
             byte[] buffer = new byte[1024];
             if (client.Receive(buffer) > 0)
             {
                 string command = Encoding.UTF8.GetString(buffer);
-                chat += command + "\n";
                 string[] str = command.Split('/');
                 for (int i = 0; i < str.Length; i++)
                 {
@@ -46,12 +73,11 @@ public class newClient : MonoBehaviour
                         return;
 
                     string[] strs = str[i].Split(',');
-                    int protocolVal = 0;
-                    int.TryParse(strs[0], out protocolVal);
+                    int.TryParse(strs[0], out int protocolVal);
 
                     switch (protocolVal)
                     {
-                        case 1000: // 돌 놓기
+                        case (int)ProtocolValue.SetPiece:
                             {
                                 int r, c, id;
                                 int.TryParse(strs[1], out r);
@@ -62,7 +88,7 @@ public class newClient : MonoBehaviour
                                 board.Turn = turn;
                                 break;
                             }
-                        case 1001: // 돌 바꾸기
+                        case (int)ProtocolValue.ChangePiece:
                             {
                                 int r, c, id;
                                 int.TryParse(strs[1], out r);
@@ -71,7 +97,7 @@ public class newClient : MonoBehaviour
                                 board.ChangePiece(r, c, id);
                                 break;
                             }
-                        case 1002: // 실시간 점수 계산
+                        case (int)ProtocolValue.CheckScore:
                             {
                                 int b, w;
                                 int.TryParse(strs[1], out b);
@@ -80,24 +106,25 @@ public class newClient : MonoBehaviour
                                 board.CanSetPiece();
                                 break;
                             }
-                        case 1003: // 턴 바꾸기
+                        case (int)ProtocolValue.ChangeTurn:
                             board.Turn = !board.Turn;
                             board.CanSetPiece();
-                            debugText.text = "놓을 위치 없음";
                             break;
-                        case 1004: // 게임 종료
+                        case (int)ProtocolValue.GameSet:
                             board.EndGame();
-                            debugText.text = "게임 끝";
                             break;
-                        case 1005: // 채팅
-                            chat += strs[1] + "\n";
-                            break;
-                        case 1010: // 연결 번호 부여
+                        case (int)ProtocolValue.Chat:
+                            {
+                                string msg = strs[1] + "\n";
+                                chatStr.Add(msg);
+                                break;
+                            }
+                        case (int)ProtocolValue.SetUniqueID:
                             int uniq;
                             int.TryParse(strs[1], out uniq);
                             uniqueID = uniq;
                             break;
-                        case 1011: // 게임 시작
+                        case (int)ProtocolValue.StartGame:
                             board.SetReady(true);
                             board.CheckScore();
                             board.CanSetPiece();
@@ -111,49 +138,41 @@ public class newClient : MonoBehaviour
         }
     }
 
-    // protocol : 1000
+    void SendMsg(string str)
+    {
+        byte[] buffer = new byte[str.Length];
+        buffer = Encoding.UTF8.GetBytes(str);
+        client.Send(buffer);
+    }
+
     public void SetPiece(int r, int c, int id)
     {
-        byte[] buffer = new byte[1024];
         string str = string.Format("1000,{0},{1},{2}/", r, c, id);
-        buffer = Encoding.UTF8.GetBytes(str);
-        client.Send(buffer);
+        SendMsg(str);
     }
 
-    // protocol : 1001
     public void ChangePiece(int r, int c, int id)
     {
-        byte[] buffer = new byte[1024];
         string str = string.Format("1001,{0},{1},{2}/", r, c, id);
-        buffer = Encoding.UTF8.GetBytes(str);
-        client.Send(buffer);
+        SendMsg(str);
     }
 
-    // protocol : 1002
     public void CheckScore(int b, int w)
     {
-        byte[] buffer = new byte[1024];
         string str = string.Format("1002,{0},{1}", b, w);
-        buffer = Encoding.UTF8.GetBytes(str);
-        client.Send(buffer);
+        SendMsg(str);
     }
 
-    // protocol : 1003
     public void ChangeTurn()
     {
-        byte[] buffer = new byte[1024];
         string str = "1003";
-        buffer = Encoding.UTF8.GetBytes(str);
-        client.Send(buffer);
+        SendMsg(str);
     }
 
-    // protocol : 1004
     public void EndGame()
     {
-        byte[] buffer = new byte[1024];
         string str = "/1004";
-        buffer = Encoding.UTF8.GetBytes(str);
-        client.Send(buffer);
+        SendMsg(str);
     }
 
     private void OnGUI()
@@ -165,19 +184,38 @@ public class newClient : MonoBehaviour
 
         Vector2 stringSize = GUI.skin.textArea.CalcSize(new GUIContent("안녕"));
         int height = 300;
-        
-        scrollPos = GUI.BeginScrollView(new Rect(0, 200, 320, height), scrollPos, new Rect(0, 200, 320, 1500));
-        GUI.TextArea(new Rect(0, 200, 300, 1500), chat);
-        GUI.EndScrollView();
-        sendMsg = GUI.TextArea(new Rect(0, 520, 190, 100), sendMsg);
+        int contentHeight = (int)stringSize.y * chatCount;
+        int addedArea = (contentHeight >= height) ? contentHeight - height : 0;
 
-        if(GUI.Button(new Rect(210, 520, 90, 100), "Send"))
+        scrollPos = GUI.BeginScrollView(new Rect(0, 200, 200, height), scrollPos, new Rect(0, 200, 180, height + addedArea));
+
+        float contentsHeight = 0;
+        for (int i = 0; i < chatStr.Count; i++)
         {
-            byte[] buffer = new byte[1024];
-            sendMsg = "1005," + sendMsg;
-            buffer = Encoding.UTF8.GetBytes(sendMsg);
-            client.Send(buffer);
-            sendMsg = string.Empty;
+            stringSize = GUI.skin.textArea.CalcSize(new GUIContent(chatStr[i]));
+
+            GUI.TextArea(new Rect(0, contentsHeight, stringSize.x, stringSize.y), chatStr[i]);
+            contentsHeight += stringSize.y;
+        }
+        GUI.EndScrollView();
+
+        chatMsg = GUI.TextField(new Rect(0, 520, 190, 100), chatMsg);
+
+
+        if (GUI.Button(new Rect(210, 520, 90, 100), "Send"))
+        {
+            if (chatMsg != string.Empty)
+            {
+                //chatMsg = "1005," + chatMsg;
+                //SendMsg(chatMsg);
+                chat += chatMsg + "\n";
+                chat += chatMsg + "\n";
+                chat += chatMsg + "\n";
+                chat += chatMsg + "\n";
+                chat += chatMsg + "\n";
+                chat += chatMsg + "\n";
+                chatMsg = string.Empty;
+            }
         }
     }
 
@@ -193,6 +231,9 @@ public class newClient : MonoBehaviour
             Debug.Log(ex);
             client = null;
         }
+
+        if (!client.Connected)
+            client = null;
     }
 
     private void OnApplicationQuit()
