@@ -19,6 +19,12 @@ enum ProtocolValue
     StartGame
 }
 
+enum MessageType
+{
+    system,
+    player
+}
+
 public class newClient : MonoBehaviour
 {
     Socket client;
@@ -26,19 +32,19 @@ public class newClient : MonoBehaviour
     Board board;
     Vector2 scrollPos = Vector2.zero;
 
-    int portNum = 80;    
-    int connectTry = 1;
+    int portNum = 80;
+    bool connected = false;
+    int connectTrycount = 1;
     float elapsedTime = 0;
+    string id = string.Empty;
     int uniqueID = -1;
     public int UniqueID
     {
         get { return uniqueID; }
     }
 
-    List<string> chatStr = new List<string>();
-    int chatCount = 0;
-    string chat = string.Empty;
-    string chatMsg = string.Empty;    
+    public GameObject chatPanel, textObj;
+    public InputField chatBox;
 
     void Start()
     {
@@ -48,16 +54,25 @@ public class newClient : MonoBehaviour
 
     void Update()
     {
+        if (!chatBox.isFocused && Input.GetKeyDown(KeyCode.Return))
+            chatBox.ActivateInputField();
+
         if (client == null)
         {
             elapsedTime += Time.deltaTime;
-            if (elapsedTime > 3f)
+            if (elapsedTime > 6f)
             {
-                connectTry++;
-                Debug.Log(connectTry);
                 elapsedTime = 0;
+                SendChatMessage(string.Format("Connecting... (Try: {0})", connectTrycount), MessageType.system);
+                connectTrycount++;
                 Connect("127.0.0.1", portNum);
             }
+        }
+
+        if (!connected && client.Connected)
+        {
+            connected = true;
+            SendChatMessage("Connected!", MessageType.system);
         }
 
         else if (client.Poll(0, SelectMode.SelectRead))
@@ -115,14 +130,18 @@ public class newClient : MonoBehaviour
                             break;
                         case (int)ProtocolValue.Chat:
                             {
-                                string msg = strs[1] + "\n";
-                                chatStr.Add(msg);
+                                SendChatMessage(strs[1], MessageType.player);
                                 break;
                             }
                         case (int)ProtocolValue.SetUniqueID:
                             int uniq;
                             int.TryParse(strs[1], out uniq);
                             uniqueID = uniq;
+
+                            if (uniqueID % 2 == 0)
+                                id = "Black" + uniqueID;
+                            else
+                                id = "White" + uniqueID;
                             break;
                         case (int)ProtocolValue.StartGame:
                             board.SetReady(true);
@@ -136,6 +155,36 @@ public class newClient : MonoBehaviour
                 }
             }
         }
+    }
+
+    private void OnGUI()
+    {
+        if (GUI.Button(new Rect(725, 430, 50, 60), "Send"))
+        {
+            if(chatBox.text != string.Empty)
+            {
+                //SendChatMessage(chatBox.text, MessageType.player);
+                Chat(chatBox.text);
+                chatBox.text = string.Empty;
+            }
+        }
+    }
+
+    void SendChatMessage(string text, MessageType msgType)
+    {
+        //string tempStr = text;
+        GameObject newText = Instantiate(textObj, chatPanel.transform);
+        Text textInfo = newText.GetComponent<Text>();
+        textInfo.text = text;
+
+        if (msgType == MessageType.player)
+            textInfo.color = Color.black;
+        else if (msgType == MessageType.system) {
+            textInfo.color = Color.green;
+            textInfo.fontStyle = FontStyle.Italic;
+        }
+
+        //messageList.Add(tempStr);
     }
 
     void SendMsg(string str)
@@ -175,48 +224,10 @@ public class newClient : MonoBehaviour
         SendMsg(str);
     }
 
-    private void OnGUI()
+    void Chat(string chatMsg)
     {
-        if (GUI.Button(new Rect(0, 0, 100, 100), "Connect"))
-        {
-            Connect("127.0.0.1", portNum);
-        }
-
-        Vector2 stringSize = GUI.skin.textArea.CalcSize(new GUIContent("안녕"));
-        int height = 300;
-        int contentHeight = (int)stringSize.y * chatCount;
-        int addedArea = (contentHeight >= height) ? contentHeight - height : 0;
-
-        scrollPos = GUI.BeginScrollView(new Rect(0, 200, 200, height), scrollPos, new Rect(0, 200, 180, height + addedArea));
-
-        float contentsHeight = 0;
-        for (int i = 0; i < chatStr.Count; i++)
-        {
-            stringSize = GUI.skin.textArea.CalcSize(new GUIContent(chatStr[i]));
-
-            GUI.TextArea(new Rect(0, contentsHeight, stringSize.x, stringSize.y), chatStr[i]);
-            contentsHeight += stringSize.y;
-        }
-        GUI.EndScrollView();
-
-        chatMsg = GUI.TextField(new Rect(0, 520, 190, 100), chatMsg);
-
-
-        if (GUI.Button(new Rect(210, 520, 90, 100), "Send"))
-        {
-            if (chatMsg != string.Empty)
-            {
-                //chatMsg = "1005," + chatMsg;
-                //SendMsg(chatMsg);
-                chat += chatMsg + "\n";
-                chat += chatMsg + "\n";
-                chat += chatMsg + "\n";
-                chat += chatMsg + "\n";
-                chat += chatMsg + "\n";
-                chat += chatMsg + "\n";
-                chatMsg = string.Empty;
-            }
-        }
+        string str = string.Format("1005,{0}: {1}", id, chatMsg);
+        SendMsg(str);
     }
 
     void Connect(string ipaddress, int port)

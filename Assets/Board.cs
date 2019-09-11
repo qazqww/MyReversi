@@ -67,7 +67,7 @@ public class Board : MonoBehaviour
 
         // 현재 마우스 위치에 돌 미리 표시
         Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        if (pos.x < -4 || pos.x > 4 || pos.y < -3 || pos.y > 5) // 돌판범위 밖일 경우
+        if (pos.x < -6 || pos.x > 2 || pos.y < -3 || pos.y > 5) // 돌판범위 밖일 경우
         {
             tempPos.transform.position = new Vector3(-10, -10, 0);
         }
@@ -104,7 +104,7 @@ public class Board : MonoBehaviour
             state += string.Format("검은 돌 개수: {0}\n" + "하얀 돌 개수: {1}\n", blackScore, whiteScore);
         }
 
-        GUI.TextArea(new Rect(400, 0, 200, 100), state);
+        GUI.TextArea(new Rect(560, 0, 200, 100), state);
     }
 
     // 돌판 초기 세팅
@@ -114,11 +114,11 @@ public class Board : MonoBehaviour
         {
             for (int j = 0; j < 8; j++)
             {
-                GameObject obj = Instantiate(slot, new Vector3(i - 3.5f, j - 2.5f, 0), Quaternion.identity, transform);
+                GameObject obj = Instantiate(slot, new Vector3(i - 5.5f, j - 2.5f, 0), Quaternion.identity, transform);
                 obj.GetComponent<SpriteRenderer>().sortingOrder = -1;
                 obj.name = string.Format("{0},{1}", i, j);
 
-                tempPlace = Instantiate(tempPlace, new Vector3(i - 3.5f, j - 2.5f, 0), Quaternion.identity, transform);
+                tempPlace = Instantiate(tempPlace, new Vector3(i - 5.5f, j - 2.5f, 0), Quaternion.identity, transform);
                 tempPlace.GetComponent<SpriteRenderer>().sortingOrder = 1;
                 tempPlace.name = string.Format("temp:{0},{1}", i, j);
                 tempPlace.SetActive(false);
@@ -147,7 +147,7 @@ public class Board : MonoBehaviour
         if (id == 2) sprite = white;
 
         pieces[row, col] = Instantiate(
-            piece, new Vector3(row - 3.5f, col - 2.5f, 0), Quaternion.identity, transform).GetComponent<SpriteRenderer>();
+            piece, new Vector3(row - 5.5f, col - 2.5f, 0), Quaternion.identity, transform).GetComponent<SpriteRenderer>();
         pieces[row, col].sprite = sprite;
         boardInfo[row, col] = id;
     }
