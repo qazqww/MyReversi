@@ -28,6 +28,7 @@ public class Board : MonoBehaviour
     bool isChanged = false;
     bool canChange = false;
     bool justCheck = false;
+    bool isStuck = false;
     bool gameSet = false;
 
     int blackScore = 2;    
@@ -304,8 +305,10 @@ public class Board : MonoBehaviour
               
                 if (CheckToChangeLite(r, c, id))
                 {
-                    if(!canChange)
+                    if (!canChange)
                         canChange = true;
+
+                    isStuck = false;
                     tempPlaces[r, c].SetActive(true);
                     boardInfo[r, c] = 3;
                 }
@@ -324,7 +327,15 @@ public class Board : MonoBehaviour
             CanSetPiece(-1);
 
         if (!canChange && !gameSet)
+        {
+            if(isStuck)
+            {
+                client.EndGame();
+                return;
+            }
             client.ChangeTurn();
+            isStuck = true;
+        }
     }
 
     public void CheckScore()

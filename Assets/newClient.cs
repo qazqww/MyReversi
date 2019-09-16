@@ -239,7 +239,7 @@ public class newClient : MonoBehaviour
         }
         catch(Exception ex)
         {
-            Debug.Log(ex);
+            SendChatMessage("Connect Failed.", MessageType.system);
             client = null;
         }
 
